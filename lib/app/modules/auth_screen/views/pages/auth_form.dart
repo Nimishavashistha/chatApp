@@ -17,7 +17,7 @@ class AuthForm extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    UserImagePicker(),
+                    if (!controller.isLogin) UserImagePicker(),
                     TextFormField(
                       key: ValueKey("email"),
                       keyboardType: TextInputType.emailAddress,

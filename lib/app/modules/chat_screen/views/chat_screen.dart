@@ -19,24 +19,22 @@ class ChatScreen extends StatelessWidget {
               DropdownMenuItem(
                 child: Container(
                   child: Row(
-                    children: [
+                    children: <Widget>[
                       Icon(Icons.exit_to_app),
-                      SizedBox(
-                        width: 8,
-                      ),
-                      Text('Logout')
+                      SizedBox(width: 8),
+                      Text('Logout'),
                     ],
                   ),
                 ),
                 value: 'logout',
-              )
+              ),
             ],
             onChanged: (itemIdentifier) {
               if (itemIdentifier == 'logout') {
                 FirebaseAuth.instance.signOut();
               }
             },
-          )
+          ),
         ],
       ),
       body: Container(

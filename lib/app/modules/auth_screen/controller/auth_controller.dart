@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:chat_app/app/routes/route_management.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -59,31 +59,44 @@ class AuthController extends GetxController {
 
   void pickImageFromGallery() async {
     final picker = ImagePicker();
-    final pickedImageFile = await picker.getImage(source: ImageSource.gallery);
+    final pickedImageFile = await picker.getImage(
+      source: ImageSource.gallery,
+//      imageQuality: 50,
+//      maxWidth: 150,
+    );
     pickedImage = File(pickedImageFile.path);
     update();
     Get.back();
+    PickedImageFile(File(pickedImageFile.path));
   }
 
   void pickImageFromCamera() async {
     final picker = ImagePicker();
-    final pickedImageFile = await picker.getImage(source: ImageSource.camera);
+    final pickedImageFile = await picker.getImage(
+      source: ImageSource.camera,
+//      imageQuality: 50,
+//      maxWidth: 150,
+    );
     pickedImage = File(pickedImageFile.path);
     update();
     Get.back();
+    PickedImageFile(File(pickedImageFile.path));
   }
 
   void submit(BuildContext context) {
     final isValid = formkey.currentState.validate();
     FocusScope.of(context).unfocus();
-    if (userImageFile == null) {
-      Get.snackbar('error', 'Please pick an image');
+    if (userImageFile == null && !isLogin) {
+      Get.showSnackbar(GetBar(
+        message: "Please pick an image",
+        backgroundColor: Theme.of(Get.context).errorColor,
+      ));
       return;
     }
     if (isValid) {
       formkey.currentState.save();
-      submitAuthForm(
-          userEmail.trim(), password.trim(), userName.trim(), isLogin, context);
+      submitAuthForm(userEmail.trim(), password.trim(), userImageFile,
+          userName.trim(), isLogin);
     }
   }
 
@@ -116,8 +129,8 @@ class AuthController extends GetxController {
     update();
   }
 
-  void submitAuthForm(String email, String password, String username,
-      bool isLogin, BuildContext context) async {
+  void submitAuthForm(String email, String password, File image,
+      String username, bool isLogin) async {
     UserCredential authResult;
     try {
       isLoading = true;
@@ -134,13 +147,18 @@ class AuthController extends GetxController {
             .whenComplete(() {
           RoutesManagement.goToChatScreen();
         });
+
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('user_image')
+            .child(authResult.user.uid + '.jpg');
+        await ref.putFile(image).whenComplete(() => null);
+        final url = await ref.getDownloadURL();
+
         await FirebaseFirestore.instance
             .collection('users')
             .doc(authResult.user.uid)
-            .set({
-          'username': username,
-          'email': email,
-        });
+            .set({'username': username, 'email': email, 'image_url': url});
         isLoading = false;
         update();
       }
@@ -151,7 +169,7 @@ class AuthController extends GetxController {
       }
       Get.showSnackbar(GetBar(
         message: message,
-        backgroundColor: Theme.of(context).errorColor,
+        backgroundColor: Theme.of(Get.context).errorColor,
       ));
       isLoading = false;
       update();
@@ -189,7 +207,7 @@ class AuthController extends GetxController {
     );
   }
 
-  void pickedImageFile(File image) {
+  void PickedImageFile(File image) {
     userImageFile = image;
     update();
   }
